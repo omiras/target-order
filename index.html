@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ordena las tarjetas</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f1faee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #1d3557;
+    }
+
+    #cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 80%;
+      max-width: 600px;
+    }
+
+    .card {
+      background-color: #a8dadc;
+      border: 1px solid #ccc;
+      padding: 10px;
+      cursor: move;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background 0.2s, transform 0.2s, margin 0.2s;
+    }
+
+    .card.dragging {
+      background-color: #457b9d;
+      color: #fff;
+      transform: scale(1.05) rotate(-2deg);
+      opacity: 0.85;
+      z-index: 10;
+    }
+
+    .card.drop-target-above {
+      margin-top: 30px;
+    }
+
+    .card.drop-target-below {
+      margin-bottom: 30px;
+    }
+
+    #success {
+      margin-top: 1rem;
+      color: green;
+      font-weight: bold;
+      display: none;
+    }
+
+    #correct-count {
+      margin: 1rem 0;
+      color: #1d3557;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Ordena las tarjetas</h1>
+
+  <div id="correct-count"></div>
+  <div id="cards"></div>
+
+  <div id="success">¡Correcto! 🎉</div>
+
+  <script>
+    const correctOrder = [
+      "La app se conecta a la instancia de MongoDB Atlas",
+      "El servidor Express es levantado y está escuchando peticiones",
+      "El usuario visita una ruta en el navegador (por ejemplo, `/movies`)",
+      "Express detecta una petición GET en una ruta específica (GET /movies)",
+      "La función asociada a la ruta se ejecuta",
+      "Se accede a la colección con `db.collection('movies')`",
+      "Se hace una consulta a la colección con `.find().toArray()`",
+      "Se espera el resultado de la consulta usando `await`",
+      "Se obtiene un array de documentos desde MongoDB",
+      "Se llama a `res.render('vista', { datos })`",
+      "Se inserta la información en una vista EJS y se genera el HTML",
+      "El servidor envía el HTML renderizado al navegador"
+    ];
+
+    // Crear tarjetas desordenadas
+    const shuffled = [...correctOrder].sort(() => Math.random() - 0.5);
+    const cardsContainer = document.getElementById("cards");
+
+    shuffled.forEach(text => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.draggable = true;
+      div.textContent = text;
+      cardsContainer.appendChild(div);
+    });
+
+    let dragged;
+
+    const correctCountDiv = document.getElementById("correct-count");
+    function updateCorrectCount() {
+      const current = Array.from(cardsContainer.children).map(card => card.textContent);
+      let correct = 0;
+      for (let i = 0; i < current.length; i++) {
+        if (current[i] === correctOrder[i]) correct++;
+      }
+      correctCountDiv.textContent = `Tarjetas en orden correcto: ${correct} / ${correctOrder.length}`;
+    }
+
+    document.addEventListener("dragstart", (e) => {
+      if (e.target.classList.contains("card")) {
+        dragged = e.target;
+        dragged.classList.add("dragging");
+      }
+    });
+
+    document.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const target = e.target;
+      if (target.classList.contains("card") && target !== dragged) {
+        // Limpia clases de drop-target
+        document.querySelectorAll('.card').forEach(card => {
+          card.classList.remove('drop-target-above', 'drop-target-below');
+        });
+        const bounding = target.getBoundingClientRect();
+        const offset = bounding.y + bounding.height / 2;
+        if (e.clientY - offset > 0) {
+          target.classList.add('drop-target-below');
+          target.after(dragged);
+        } else {
+          target.classList.add('drop-target-above');
+          target.before(dragged);
+        }
+      }
+    });
+
+    document.addEventListener("dragleave", (e) => {
+      if (e.target.classList && e.target.classList.contains("card")) {
+        e.target.classList.remove('drop-target-above', 'drop-target-below');
+      }
+    });
+
+    document.addEventListener("drop", (e) => {
+      document.querySelectorAll('.card').forEach(card => {
+        card.classList.remove('drop-target-above', 'drop-target-below');
+      });
+    });
+
+    document.addEventListener("dragend", () => {
+      if (dragged) dragged.classList.remove("dragging");
+      document.querySelectorAll('.card').forEach(card => {
+        card.classList.remove('drop-target-above', 'drop-target-below');
+      });
+      const current = Array.from(cardsContainer.children).map(card => card.textContent);
+      if (JSON.stringify(current) === JSON.stringify(correctOrder)) {
+        document.getElementById("success").style.display = "block";
+      } else {
+        document.getElementById("success").style.display = "none";
+      }
+      updateCorrectCount();
+    });
+
+    // Inicializa el contador al cargar
+    updateCorrectCount();
+  </script>
+
+</body>
+</html>
